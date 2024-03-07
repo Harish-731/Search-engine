@@ -2,6 +2,7 @@
 
 import torch
 from transformers import BertTokenizer, BertForMaskedLM
+import string
 
 # Load pre-trained BERT model and tokenizer
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
@@ -43,7 +44,14 @@ def predict_next_words(text, top_k=10):
     # Convert token IDs back to words
     top_k_words = tokenizer.convert_ids_to_tokens(top_k_indices.tolist())
 
+    # Filter out special tokens and punctuation marks
+    special_tokens = ['[CLS]', '[SEP]', '[MASK]', '[PAD]']
+    punctuation_marks = set(string.punctuation)
+    top_k_words = [word for word in top_k_words if word not in special_tokens and word not in punctuation_marks]
+
+
     return top_k_words
+
 
 # Example usage
 text = "machine learning and"
