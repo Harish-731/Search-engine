@@ -2,7 +2,8 @@
 
 import torch
 from transformers import BertTokenizer, BertForMaskedLM
-import string
+from nltk.corpus import wordnet
+from nltk.corpus import stopwords
 
 # Load pre-trained BERT model and tokenizer
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
@@ -12,8 +13,32 @@ model = BertForMaskedLM.from_pretrained('bert-base-uncased')
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
+# Download NLTK resources
+import nltk
+nltk.download('wordnet')
+nltk.download('stopwords')
+
+# Get English stopwords
+english_stopwords = set(stopwords.words('english'))
+
+# Define a function to filter out words related to job fields
+def filter_job_field_words(words):
+    # job fields
+    job_fields = [
+        'education', 'healthcare', 'technology', 'finance', 'engineering',
+        'marketing', 'hospitality', 'government', 'entertainment', 'retail',
+        'manufacturing', 'transportation', 'agriculture', 'construction'
+    ]
+    job_field_words = set()
+    for field in job_fields:
+        field_synsets = wordnet.synsets(field)
+        for synset in field_synsets:
+            job_field_words.update([lemma.name() for lemma in synset.lemmas()])
+    filtered_words = [word for word in words if word.lower() not in english_stopwords and word.lower() not in job_field_words]
+    return filtered_words
+
 # Define a function to predict next words
-def predict_next_words(text, top_k=10):
+def predict_next_words(text, top_k=150):
     # Tokenize the input text
     tokenized_text = tokenizer.tokenize(text)
     
@@ -44,13 +69,24 @@ def predict_next_words(text, top_k=10):
     # Convert token IDs back to words
     top_k_words = tokenizer.convert_ids_to_tokens(top_k_indices.tolist())
 
-    # Filter out special tokens and punctuation marks
+    # Filter out special tokens
     special_tokens = ['[CLS]', '[SEP]', '[MASK]', '[PAD]']
-    punctuation_marks = set(string.punctuation)
-    top_k_words = [word for word in top_k_words if word not in special_tokens and word not in punctuation_marks]
+    top_k_words = [word for word in top_k_words if word not in special_tokens]
 
+    # Filter out job field-related words
+    filtered_words = filter_job_field_words(top_k_words)
 
-    return top_k_words
+    # Filter out words based on heuristics to identify verbs, nouns, and adjectives
+    final_filtered_words = []
+    for word in filtered_words:
+        if word.isalpha():  # Exclude words containing non-alphabetic characters
+            if len(wordnet.synsets(word)) > 0:  # Check if the word exists in WordNet
+                synset = wordnet.synsets(word)[0]
+                pos_tag = synset.pos()
+                if  pos_tag.startswith('n') :
+                    final_filtered_words.append(word)
+
+    return final_filtered_words
 
 
 # Example usage
