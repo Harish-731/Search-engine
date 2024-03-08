@@ -21,21 +21,6 @@ nltk.download('stopwords')
 # Get English stopwords
 english_stopwords = set(stopwords.words('english'))
 
-# Define a function to filter out words related to job fields
-def filter_job_field_words(words):
-    # job fields
-    job_fields = [
-        'education', 'healthcare', 'technology', 'finance', 'engineering',
-        'marketing', 'hospitality', 'government', 'entertainment', 'retail',
-        'manufacturing', 'transportation', 'agriculture', 'construction'
-    ]
-    job_field_words = set()
-    for field in job_fields:
-        field_synsets = wordnet.synsets(field)
-        for synset in field_synsets:
-            job_field_words.update([lemma.name() for lemma in synset.lemmas()])
-    filtered_words = [word for word in words if word.lower() not in english_stopwords and word.lower() not in job_field_words]
-    return filtered_words
 
 # Define a function to predict next words
 def predict_next_words(text, top_k=150):
@@ -74,7 +59,7 @@ def predict_next_words(text, top_k=150):
     top_k_words = [word for word in top_k_words if word not in special_tokens]
 
     # Filter out job field-related words
-    filtered_words = filter_job_field_words(top_k_words)
+    filtered_words = [word for word in top_k_words if word.lower() not in english_stopwords ]
 
     # Filter out words based on heuristics to identify verbs, nouns, and adjectives
     final_filtered_words = []
@@ -85,6 +70,7 @@ def predict_next_words(text, top_k=150):
                 pos_tag = synset.pos()
                 if  pos_tag.startswith('n') :
                     final_filtered_words.append(word)
+    
 
     return final_filtered_words
 
