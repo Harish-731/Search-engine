@@ -137,3 +137,32 @@ def weighted_spell_check_en(term):
 query = 'Mieuz vaut tard que jamais shhsh'
 corrected_query = weighted_spell_check_query(query)
 print(f"Suggested spelling for '{query}': {corrected_query}")
+
+"""Speech Recognition"""
+
+import speech_recognition as sr
+recognizer = sr.Recognizer()
+
+#Function to convert speech to text
+def speechtotext():
+    with sr.Microphone() as source:
+        print("Listening...")
+        #recognizer.adjustfor_ambient_noise(source)  # Adjust for ambient noise
+        audio = recognizer.listen(source)  # Listen to microphone input
+
+    try:
+        print("Recognizing...")
+        text = recognizer.recognize_google(audio)  # Recognize speech using Google Speech Recognition
+        return text
+    except sr.UnknownValueError:
+        print("Could not understand audio")
+    except sr.RequestError as e:
+        print("Error fetching results; {0}".format(e))
+        
+if __name__ == "__main__":
+    while True:
+        speech_text = speechtotext()
+        if speech_text:
+            print("You said:", speech_text)
+            if speech_text.lower() == "stop":
+                break
